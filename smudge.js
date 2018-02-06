@@ -13,7 +13,7 @@ class Cell {
 		rect(this.column * settings.gridSize, this.row * settings.gridSize, settings.gridSize, settings.gridSize);
 	}
 
-	interpolateColor() {
+	interpolate() {
 		var previousRow    = constrain(this.row    - 1, 0, settings.rows    - 1);
 		var nextRow        = constrain(this.row    + 1, 0, settings.rows    - 1);
 		var previousColumn = constrain(this.column - 1, 0, settings.columns - 1);
@@ -41,13 +41,15 @@ class Cell {
 
 		var interpolatedColor = lerpColor(color0, color1, amount);
 
-		this.h = hue(interpolatedColor);
-		this.s = saturation(interpolatedColor);
-		this.b = brightness(interpolatedColor);
+		this.h = Math.round(hue(interpolatedColor));
+		this.s = Math.round(saturation(interpolatedColor));
+		this.b = Math.round(brightness(interpolatedColor));
 	}
 }
 
 var settings = {
+	loop : true,
+
 	gridSize : 10,
 
 	checkerboard : true,
@@ -131,7 +133,18 @@ function setup() {
 	createCanvas(windowWidth, windowHeight);
 	colorMode(HSB);
 	noStroke();
+	textFont('Menlo', 12);
+	createGrid();
+}
 
+function draw() {
+	interpolateGrid();
+	createSeeds();
+	walk();
+	displayGrid();
+}
+
+function createGrid() {
 	settings.rows    = Math.round(height / settings.gridSize);
 	settings.columns = Math.round(width  / settings.gridSize);
 
@@ -150,24 +163,30 @@ function setup() {
 	}
 }
 
-function draw() {
+function displayGrid() {
 	for (var i = 0; i < settings.rows; i++) {
 		for (var j = 0; j < settings.columns; j++) {
 			cells[i][j].display();
+		}
+	}
+}
 
+function interpolateGrid() {
+	for (var i = 0; i < settings.rows; i++) {
+		for (var j = 0; j < settings.columns; j++) {
 			if (coin(settings.interpolationProbability.value)) {
-				cells[i][j].interpolateColor();
+				cells[i][j].interpolate();
 			}
 		}
 	}
+}
 
-	var newSeeds = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
+function createSeeds() {
+	var n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
 
-	for (var i = 0; i < newSeeds; i++) {
+	for (var i = 0; i < n; i++) {
 		seed();
 	}
-
-	walk();
 }
 
 function seed() {
@@ -206,6 +225,89 @@ function walk() {
 				}
 			}
 		}
+	}
+}
+
+function displayReadout() {
+	var row    = Math.floor(mouseY / settings.gridSize);
+	var column = Math.floor(mouseX / settings.gridSize);
+	var cell   = cells[row][column];
+
+	var cellColor = color(cell.h, cell.s, cell.b);
+
+	var hsb = [cell.h, cell.s, cell.b].map(x => String(x));
+	var hsbLength = Math.max(...hsb.map(x => x.length));
+	hsb = hsb.map(x => x.padStart(hsbLength));
+
+	var rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
+	var rgbLength = Math.max(...rgb.map(x => x.length));
+	rgb = rgb.map(x => x.padStart(rgbLength));
+
+	var readoutLine1 = 'H ' + hsb[0] + ' R ' + rgb[0];
+	var readoutLine2 = 'S ' + hsb[1] + ' G ' + rgb[1];
+	var readoutLine3 = 'B ' + hsb[2] + ' B ' + rgb[2];
+
+	var readout = [readoutLine1, readoutLine2, readoutLine3].join('\n');
+
+	var textW = Math.ceil(textWidth(readoutLine1));
+	var textH = textLeading() * 3 - 2;
+
+	var textMargin  = 5;
+	var boxDistance = 5;
+
+	var boxW = textW + textMargin * 2;
+	var boxH = textH + textMargin * 2;
+
+	var boxX, boxY, textX, textY;
+
+	if (mouseX + boxDistance + boxW < width) {
+		boxX  = mouseX + boxDistance;
+		textX = mouseX + boxDistance + textMargin;
+	} else {
+		boxX  = mouseX - boxDistance - boxW;
+		textX = mouseX - boxDistance - boxW + textMargin;
+	}
+
+	if (mouseY + boxDistance + boxH < height) {
+		boxY  = mouseY + boxDistance;
+		textY = mouseY + boxDistance + textMargin;
+	} else {
+		boxY  = mouseY - boxDistance - boxH;
+		textY = mouseY - boxDistance - boxH + textMargin;
+	}
+
+	fill(0, 0, 0, 0.5);
+	rect(boxX, boxY, boxW, boxH);
+
+	fill(0, 0, 100);
+	textAlign(LEFT, TOP);
+	text(readout, textX, textY);
+}
+
+function keyPressed() {
+	if (keyCode == 32) {
+		if (settings.loop) {
+			settings.loop = false;
+			noLoop();
+			cursor(CROSS);
+		} else {
+			settings.loop = true;
+			loop();
+			cursor(ARROW);
+		}
+	}
+
+	if (keyCode == RIGHT_ARROW) {
+		if (! settings.loop) {
+			redraw();
+		}
+	}
+}
+
+function mouseMoved() {
+	if (! settings.loop) {
+		displayGrid();
+		displayReadout();
 	}
 }
 
