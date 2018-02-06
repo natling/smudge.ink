@@ -285,22 +285,30 @@ function displayReadout() {
 }
 
 function keyPressed() {
-	if (keyCode == 32) {
-		if (settings.loop) {
-			settings.loop = false;
-			noLoop();
-			cursor(CROSS);
-		} else {
-			settings.loop = true;
-			loop();
-			cursor(ARROW);
-		}
-	}
+	switch (keyCode) {
+		case 32:
+			if (settings.loop) {
+				settings.loop = false;
+				noLoop();
+				cursor(CROSS);
+			} else {
+				settings.loop = true;
+				loop();
+				cursor(ARROW);
+			}
+			break;
 
-	if (keyCode == RIGHT_ARROW) {
-		if (! settings.loop) {
-			redraw();
-		}
+		case RIGHT_ARROW:
+			if (! settings.loop) {
+				redraw();
+			}
+			break;
+
+		case DOWN_ARROW:
+			if (! settings.loop) {
+				save();
+			}
+			break;
 	}
 }
 
