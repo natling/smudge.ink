@@ -306,6 +306,7 @@ function keyPressed() {
 
 		case DOWN_ARROW:
 			if (! settings.loop) {
+				displayGrid();
 				save();
 			}
 			break;
