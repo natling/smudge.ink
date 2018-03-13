@@ -48,11 +48,12 @@ class Cell {
 }
 
 var settings = {
-	loop : true,
+	checkerboard : true,
+
+	loop    : true,
+	readout : false,
 
 	gridSize : 10,
-
-	checkerboard : true,
 
 	minSeedsPerFrame : {
 		value           :   0,
@@ -131,17 +132,30 @@ var cells;
 
 function setup() {
 	createCanvas(windowWidth, windowHeight);
+	cursor(CROSS);
 	colorMode(HSB);
+	background(0);
 	noStroke();
 	textFont('Menlo', 12);
 	createGrid();
 }
 
 function draw() {
+	if (settings.loop) {
+		advanceFrame();
+	}
+
+	displayGrid();
+
+	if (settings.readout) {
+		readout();
+	}
+}
+
+function advanceFrame() {
 	interpolateGrid();
 	createSeeds();
 	walk();
-	displayGrid();
 }
 
 function createGrid() {
@@ -150,32 +164,32 @@ function createGrid() {
 
 	cells = create2DArray(settings.rows, settings.columns);
 
-	for (var i = 0; i < settings.rows; i++) {
-		for (var j = 0; j < settings.columns; j++) {
-			var row    = i;
-			var column = j;
+	for (var y = 0; y < settings.rows; y++) {
+		for (var x = 0; x < settings.columns; x++) {
+			var row    = y;
+			var column = x;
 			var h      = randomIntegerInclusive(0, 360);
 			var s      = randomIntegerInclusive(settings.minS.value, settings.maxS.value);
 			var b      = 0;
 
-			cells[i][j] = new Cell(row, column, h, s, b);
+			cells[y][x] = new Cell(row, column, h, s, b);
 		}
 	}
 }
 
 function displayGrid() {
-	for (var i = 0; i < settings.rows; i++) {
-		for (var j = 0; j < settings.columns; j++) {
-			cells[i][j].display();
+	for (var y = 0; y < settings.rows; y++) {
+		for (var x = 0; x < settings.columns; x++) {
+			cells[y][x].display();
 		}
 	}
 }
 
 function interpolateGrid() {
-	for (var i = 0; i < settings.rows; i++) {
-		for (var j = 0; j < settings.columns; j++) {
+	for (var y = 0; y < settings.rows; y++) {
+		for (var x = 0; x < settings.columns; x++) {
 			if (coin(settings.interpolationProbability.value)) {
-				cells[i][j].interpolate();
+				cells[y][x].interpolate();
 			}
 		}
 	}
@@ -190,24 +204,24 @@ function createSeeds() {
 }
 
 function seed() {
-	var i1 = randomIntegerInclusive(0, settings.rows    - 1);
-	var j1 = randomIntegerInclusive(0, settings.columns - 1);
+	var y1 = randomIntegerInclusive(0, settings.rows    - 1);
+	var x1 = randomIntegerInclusive(0, settings.columns - 1);
 
 	var iOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 	var jOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 
-	var i2 = constrain(i1 + iOffset, 0, settings.rows    - 1);
-	var j2 = constrain(j1 + jOffset, 0, settings.columns - 1);
+	var y2 = constrain(y1 + iOffset, 0, settings.rows    - 1);
+	var x2 = constrain(x1 + jOffset, 0, settings.columns - 1);
 
 	var h = randomIntegerInclusive(0, 360);
 	var s = randomIntegerInclusive(settings.minS.value, settings.maxS.value);
 	var b = randomIntegerInclusive(settings.minB.value, settings.maxB.value);
 
-	for (var i = i1; i < i2 - 1; i++) {
-		for (var j = j1; j < j2 - 1; j++) {
-			cells[i][j].h = h;
-			cells[i][j].s = s;
-			cells[i][j].b = b;
+	for (var y = y1; y < y2 + 1; y++) {
+		for (var x = x1; x < x2 + 1; x++) {
+			cells[y][x].h = h;
+			cells[y][x].s = s;
+			cells[y][x].b = b;
 		}
 	}
 }
@@ -228,10 +242,10 @@ function walk() {
 	}
 }
 
-function displayReadout() {
-	var row    = Math.floor(mouseY / settings.gridSize);
-	var column = Math.floor(mouseX / settings.gridSize);
-	var cell   = cells[row][column];
+function readout() {
+	var {row, column} = mouseCoordinates();
+
+	var cell = cells[row][column];
 
 	var cellColor = color(cell.h, cell.s, cell.b);
 
@@ -247,7 +261,7 @@ function displayReadout() {
 	var readoutLine2 = 'S ' + hsb[1] + ' G ' + rgb[1];
 	var readoutLine3 = 'B ' + hsb[2] + ' B ' + rgb[2];
 
-	var readout = [readoutLine1, readoutLine2, readoutLine3].join('\n');
+	var readoutText = [readoutLine1, readoutLine2, readoutLine3].join('\n');
 
 	var textW = Math.ceil(textWidth(readoutLine1));
 	var textH = textLeading() * 3 - 2;
@@ -281,42 +295,39 @@ function displayReadout() {
 
 	fill(0, 0, 100);
 	textAlign(LEFT, TOP);
-	text(readout, textX, textY);
+	text(readoutText, textX, textY);
 }
 
 function keyPressed() {
 	switch (keyCode) {
 		case 32:
-			if (settings.loop) {
-				settings.loop = false;
-				noLoop();
-				cursor(CROSS);
-			} else {
-				settings.loop = true;
-				loop();
-				cursor(ARROW);
-			}
+			settings.loop = ! settings.loop;
+			settings.readout = false;
 			break;
 
 		case RIGHT_ARROW:
 			if (! settings.loop) {
-				redraw();
+				advanceFrame();
 			}
 			break;
 
 		case DOWN_ARROW:
-			if (! settings.loop) {
-				displayGrid();
-				save();
-			}
+			displayGrid();
+			save();
 			break;
 	}
 }
 
 function mouseMoved() {
 	if (! settings.loop) {
-		displayGrid();
-		displayReadout();
+		settings.readout = true;
+	}
+}
+
+function mouseCoordinates() {
+	return {
+		row    : Math.floor(mouseY / settings.gridSize),
+		column : Math.floor(mouseX / settings.gridSize),
 	}
 }
 
