@@ -167,8 +167,10 @@ function displayGrid() {
 function interpolateGrid() {
 	for (var y = 0; y < settings.rows; y++) {
 		for (var x = 0; x < settings.columns; x++) {
-			if (coin(settings.interpolationProbability.value)) {
-				cells[y][x].interpolate();
+			if (! cells[y][x].frozen) {
+				if (coin(settings.interpolationProbability.value)) {
+					cells[y][x].interpolate();
+				}
 			}
 		}
 	}
@@ -270,7 +272,7 @@ function highlight() {
 	rect(x, y, w, h);
 }
 
-function seed() {
+function seed(frozen) {
 	var {
 		start : {
 			column : x1,
@@ -294,6 +296,38 @@ function seed() {
 			cells[y][x].h = h;
 			cells[y][x].s = s;
 			cells[y][x].b = b;
+
+			if (frozen) {
+				cells[y][x].frozen = true;
+			} else {
+				cells[y][x].frozen = false;
+			}
+		}
+	}
+}
+
+function freeze(direction) {
+	var {
+		start : {
+			column : x1,
+			row    : y1,
+		},
+		end : {
+			column : x2,
+			row    : y2,
+		},
+	} = settings.selection;
+
+	[x1, x2] = [x1, x2].sort(sortNumbers);
+	[y1, y2] = [y1, y2].sort(sortNumbers);
+
+	for (var y = y1; y < y2 + 1; y++) {
+		for (var x = x1; x < x2 + 1; x++) {
+			if (direction) {
+				cells[y][x].frozen = true;
+			} else {
+				cells[y][x].frozen = false;
+			}
 		}
 	}
 }
@@ -335,7 +369,16 @@ function mouseDragged() {
 }
 
 function mouseReleased() {
-	seed();
+	if (keyIsDown(70)) {
+		freeze(true);
+	} else if (keyIsDown(85)) {
+		freeze(false);
+	} else if (keyIsDown(SHIFT)) {
+		seed(true);
+	} else {
+		seed(false);
+	}
+
 	settings.highlight = false;
 }
 
