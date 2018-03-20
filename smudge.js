@@ -1,59 +1,60 @@
 class Cell {
 
-	constructor(row, column, h, s, b) {
-		this.row    = row;
-		this.column = column;
-		this.h      = h;
-		this.s      = s;
-		this.b      = b;
+	constructor(coordinates, color) {
+		this.coordinates = coordinates;
+		this.color       = color;
 	}
 
 	display() {
-		fill(color(this.h, this.s, this.b));
-		rect(this.column * settings.gridSize, this.row * settings.gridSize, settings.gridSize, settings.gridSize);
+		fill(colorFromHSB(this.color));
+		rect(this.coordinates.x * settings.grid.scale, this.coordinates.y * settings.grid.scale, settings.grid.scale, settings.grid.scale);
 	}
 
 	interpolate() {
-		var previousRow    = constrain(this.row    - 1, 0, settings.rows    - 1);
-		var nextRow        = constrain(this.row    + 1, 0, settings.rows    - 1);
-		var previousColumn = constrain(this.column - 1, 0, settings.columns - 1);
-		var nextColumn     = constrain(this.column + 1, 0, settings.columns - 1);
+		var rowPrevious    = constrain(this.coordinates.y - 1, 0, settings.grid.rows    - 1);
+		var rowNext        = constrain(this.coordinates.y + 1, 0, settings.grid.rows    - 1);
+		var columnPrevious = constrain(this.coordinates.x - 1, 0, settings.grid.columns - 1);
+		var columnNext     = constrain(this.coordinates.x + 1, 0, settings.grid.columns - 1);
 
 		var neighbors = [];
 
 		if (settings.checkerboard) {
-			neighbors.push(cells[previousRow][previousColumn]);
-			neighbors.push(cells[previousRow][nextColumn]);
-			neighbors.push(cells[nextRow][previousColumn]);
-			neighbors.push(cells[nextRow][nextColumn]);
+			neighbors.push(cells[rowPrevious][columnPrevious]);
+			neighbors.push(cells[rowPrevious][columnNext]);
+			neighbors.push(cells[rowNext][columnPrevious]);
+			neighbors.push(cells[rowNext][columnNext]);
 		} else {
-			neighbors.push(cells[previousRow][this.column]);
-			neighbors.push(cells[nextRow][this.column]);
-			neighbors.push(cells[this.row][previousColumn]);
-			neighbors.push(cells[this.row][nextColumn]);
+			neighbors.push(cells[rowPrevious][this.coordinates.x]);
+			neighbors.push(cells[rowNext][this.coordinates.x]);
+			neighbors.push(cells[this.coordinates.y][columnPrevious]);
+			neighbors.push(cells[this.coordinates.y][columnNext]);
 		}
 
 		shuffleArray(neighbors);
 
-		var color0 = color(neighbors[0].h, neighbors[0].s, neighbors[0].b);
-		var color1 = color(neighbors[1].h, neighbors[1].s, neighbors[1].b);
+		var color1 = colorFromHSB(neighbors[0].color);
+		var color2 = colorFromHSB(neighbors[1].color);
 		var amount = randomFloat(0, 1);
 
-		var interpolatedColor = lerpColor(color0, color1, amount);
+		var interpolatedColor = lerpColor(color1, color2, amount);
 
-		this.h = Math.round(hue(interpolatedColor));
-		this.s = Math.round(saturation(interpolatedColor));
-		this.b = Math.round(brightness(interpolatedColor));
+		this.color = {
+			h : Math.round(hue(interpolatedColor)),
+			s : Math.round(saturation(interpolatedColor)),
+			b : Math.round(brightness(interpolatedColor)),
+		};
 	}
 }
 
 var settings = {
+	grid : {
+		scale : 10,
+	},
+
 	checkerboard : true,
 
 	loop    : true,
 	readout : false,
-
-	gridSize : 10,
 
 	minSeedsPerFrame : {
 		value           :   0,
@@ -132,11 +133,16 @@ var cells;
 
 function setup() {
 	createCanvas(windowWidth, windowHeight);
-	cursor(CROSS);
 	colorMode(HSB);
+	cursor(CROSS);
+
 	background(0);
+
 	noStroke();
+
 	textFont('Menlo', 12);
+	textAlign(LEFT, TOP);
+
 	createGrid();
 }
 
@@ -159,35 +165,40 @@ function advanceFrame() {
 }
 
 function createGrid() {
-	settings.rows    = Math.round(height / settings.gridSize);
-	settings.columns = Math.round(width  / settings.gridSize);
+	settings.grid.rows    = Math.round(height / settings.grid.scale);
+	settings.grid.columns = Math.round(width  / settings.grid.scale);
 
-	cells = create2DArray(settings.rows, settings.columns);
+	cells = create2DArray(settings.grid.rows, settings.grid.columns);
 
-	for (var y = 0; y < settings.rows; y++) {
-		for (var x = 0; x < settings.columns; x++) {
-			var row    = y;
-			var column = x;
-			var h      = randomIntegerInclusive(0, 360);
-			var s      = randomIntegerInclusive(settings.minS.value, settings.maxS.value);
-			var b      = 0;
+	for (var y = 0; y < settings.grid.rows; y++) {
+		for (var x = 0; x < settings.grid.columns; x++) {
+			var coordinates = {
+				x : x,
+				y : y,
+			};
 
-			cells[y][x] = new Cell(row, column, h, s, b);
+			var color = {
+				h : randomIntegerInclusive(0, 360),
+				s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+				b : 0,
+			};
+
+			cells[y][x] = new Cell(coordinates, color);
 		}
 	}
 }
 
 function displayGrid() {
-	for (var y = 0; y < settings.rows; y++) {
-		for (var x = 0; x < settings.columns; x++) {
+	for (var y = 0; y < settings.grid.rows; y++) {
+		for (var x = 0; x < settings.grid.columns; x++) {
 			cells[y][x].display();
 		}
 	}
 }
 
 function interpolateGrid() {
-	for (var y = 0; y < settings.rows; y++) {
-		for (var x = 0; x < settings.columns; x++) {
+	for (var y = 0; y < settings.grid.rows; y++) {
+		for (var x = 0; x < settings.grid.columns; x++) {
 			if (coin(settings.interpolationProbability.value)) {
 				cells[y][x].interpolate();
 			}
@@ -204,24 +215,24 @@ function createSeeds() {
 }
 
 function seed() {
-	var y1 = randomIntegerInclusive(0, settings.rows    - 1);
-	var x1 = randomIntegerInclusive(0, settings.columns - 1);
+	var y1 = randomIntegerInclusive(0, settings.grid.rows    - 1);
+	var x1 = randomIntegerInclusive(0, settings.grid.columns - 1);
 
 	var iOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 	var jOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 
-	var y2 = constrain(y1 + iOffset, 0, settings.rows    - 1);
-	var x2 = constrain(x1 + jOffset, 0, settings.columns - 1);
+	var y2 = constrain(y1 + iOffset, 0, settings.grid.rows    - 1);
+	var x2 = constrain(x1 + jOffset, 0, settings.grid.columns - 1);
 
-	var h = randomIntegerInclusive(0, 360);
-	var s = randomIntegerInclusive(settings.minS.value, settings.maxS.value);
-	var b = randomIntegerInclusive(settings.minB.value, settings.maxB.value);
+	var color = {
+		h : randomIntegerInclusive(0, 360),
+		s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+		b : randomIntegerInclusive(settings.minB.value, settings.maxB.value),
+	};
 
 	for (var y = y1; y < y2 + 1; y++) {
 		for (var x = x1; x < x2 + 1; x++) {
-			cells[y][x].h = h;
-			cells[y][x].s = s;
-			cells[y][x].b = b;
+			Object.assign(cells[y][x].color, color);
 		}
 	}
 }
@@ -229,7 +240,7 @@ function seed() {
 function walk() {
 	for (parameter in settings) {
 		if (settings.hasOwnProperty(parameter)) {
-			if (typeof settings[parameter] == 'object') {
+			if (settings[parameter].hasOwnProperty('walkProbability')) {
 				if (coin(settings[parameter].walkProbability)) {
 					if (settings[parameter].walkType == 'int') {
 						settings[parameter].value = randomWalkInteger(settings[parameter].value, settings[parameter].min, settings[parameter].max, settings[parameter].walkStep);
@@ -247,23 +258,23 @@ function readout() {
 
 	var cell = cells[row][column];
 
-	var cellColor = color(cell.h, cell.s, cell.b);
+	var cellColor = colorFromHSB(cell.color);
 
-	var hsb = [cell.h, cell.s, cell.b].map(x => String(x));
-	var hsbLength = Math.max(...hsb.map(x => x.length));
-	hsb = hsb.map(x => x.padStart(hsbLength));
-
+	var hsb = [cell.color.h, cell.color.s, cell.color.b].map(x => String(x));
 	var rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
-	var rgbLength = Math.max(...rgb.map(x => x.length));
-	rgb = rgb.map(x => x.padStart(rgbLength));
 
-	var readoutLine1 = 'H ' + hsb[0] + ' R ' + rgb[0];
-	var readoutLine2 = 'S ' + hsb[1] + ' G ' + rgb[1];
-	var readoutLine3 = 'B ' + hsb[2] + ' B ' + rgb[2];
+	[hsb, rgb] = [hsb, rgb].map(function (array) {
+		var pad = Math.max(...array.map(x => x.length));
+		return array.map(x => x.padStart(pad));
+	});
 
-	var readoutText = [readoutLine1, readoutLine2, readoutLine3].join('\n');
+	var readoutText = [
+		'H ' + hsb[0] + ' R ' + rgb[0],
+		'S ' + hsb[1] + ' G ' + rgb[1],
+		'B ' + hsb[2] + ' B ' + rgb[2],
+	].join('\n');
 
-	var textW = Math.ceil(textWidth(readoutLine1));
+	var textW = Math.ceil(textWidth(readoutText.split('\n')[0]));
 	var textH = textLeading() * 3 - 2;
 
 	var textMargin  = 5;
@@ -294,7 +305,6 @@ function readout() {
 	rect(boxX, boxY, boxW, boxH);
 
 	fill(0, 0, 100);
-	textAlign(LEFT, TOP);
 	text(readoutText, textX, textY);
 }
 
@@ -326,7 +336,12 @@ function mouseMoved() {
 
 function mouseCoordinates() {
 	return {
-		row    : Math.floor(mouseY / settings.gridSize),
-		column : Math.floor(mouseX / settings.gridSize),
+		row    : Math.floor(mouseY / settings.grid.scale),
+		column : Math.floor(mouseX / settings.grid.scale),
 	}
+}
+
+function colorFromHSB(hsb) {
+	var {h, s, b} = hsb;
+	return color(h, s, b);
 }
