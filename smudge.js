@@ -260,7 +260,7 @@ function readout() {
 
 	var cellColor = colorFromHSB(cell.color);
 
-	var hsb = [cell.color.h, cell.color.s, cell.color.b].map(x => String(x));
+	var hsb = [cell.color.h, cell.color.s, cell.color.b].map(String);
 	var rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
 
 	[hsb, rgb] = [hsb, rgb].map(function (array) {
