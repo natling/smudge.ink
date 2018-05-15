@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'Menlo';
+  font-style: normal;
+  src:
+    local('Menlo'),
+    local('Menlo Regular'),
+    url('files/menlo.otf') format('opentype');
+}
+
+body {
+  margin: 0px;
+  overflow: hidden;
+  background-color: black;
+}
