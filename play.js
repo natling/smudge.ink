@@ -103,10 +103,7 @@ function createGrid() {
 
 	for (var y = 0; y < settings.grid.rows; y++) {
 		for (var x = 0; x < settings.grid.columns; x++) {
-			var coordinates = {
-				x : x,
-				y : y,
-			};
+			var coordinates = {x, y};
 
 			var color = {
 				h : randomIntegerInclusive(0, 360),
