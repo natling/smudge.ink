@@ -2,8 +2,8 @@ settings = {
 	... settings,
 
 	... {
-		mode      : false,
-		drawing   : false,
+		mode    : false,
+		drawing : false,
 
 		controller : {
 			grid : {
