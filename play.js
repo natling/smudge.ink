@@ -255,12 +255,7 @@ function seed(frozen) {
 	for (var y = y1; y < y2 + 1; y++) {
 		for (var x = x1; x < x2 + 1; x++) {
 			Object.assign(cells[y][x].color, color);
-
-			if (frozen) {
-				cells[y][x].frozen = true;
-			} else {
-				cells[y][x].frozen = false;
-			}
+			cells[y][x].frozen = frozen;
 		}
 	}
 }
@@ -282,11 +277,7 @@ function freeze(direction) {
 
 	for (var y = y1; y < y2 + 1; y++) {
 		for (var x = x1; x < x2 + 1; x++) {
-			if (direction) {
-				cells[y][x].frozen = true;
-			} else {
-				cells[y][x].frozen = false;
-			}
+			cells[y][x].frozen = direction;
 		}
 	}
 }
