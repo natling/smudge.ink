@@ -1,4 +1,4 @@
-var settings = {
+const settings = {
 	grid : {
 		scale : 10,
 	},
@@ -81,9 +81,7 @@ var settings = {
 	},
 };
 
-var cells;
-
-function setup() {
+setup = () => {
 	createCanvas(windowWidth, windowHeight);
 	colorMode(HSB);
 	cursor(CROSS);
@@ -98,7 +96,7 @@ function setup() {
 	createGrid();
 }
 
-function draw() {
+draw = () => {
 	if (settings.loop) {
 		advanceFrame();
 	}
@@ -110,83 +108,83 @@ function draw() {
 	}
 }
 
-function advanceFrame() {
+const advanceFrame = () => {
 	interpolateGrid();
 	createSeeds();
 	walk();
 }
 
-function createGrid() {
+const createGrid = () => {
 	settings.grid.rows    = Math.round(height / settings.grid.scale);
 	settings.grid.columns = Math.round(width  / settings.grid.scale);
 
-	cells = create2DArray(settings.grid.rows, settings.grid.columns);
+	settings.cells = create2DArray(settings.grid.rows, settings.grid.columns);
 
-	for (var y = 0; y < settings.grid.rows; y++) {
-		for (var x = 0; x < settings.grid.columns; x++) {
-			var coordinates = {x, y};
+	for (let y = 0; y < settings.grid.rows; y++) {
+		for (let x = 0; x < settings.grid.columns; x++) {
+			const coordinates = {x, y};
 
-			var color = {
+			const color = {
 				h : randomIntegerInclusive(0, 360),
 				s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
 				b : 0,
 			};
 
-			cells[y][x] = new Cell(coordinates, color);
+			settings.cells[y][x] = new Cell(coordinates, color);
 		}
 	}
 }
 
-function displayGrid() {
-	for (var y = 0; y < settings.grid.rows; y++) {
-		for (var x = 0; x < settings.grid.columns; x++) {
-			cells[y][x].display();
+const displayGrid = () => {
+	for (let y = 0; y < settings.grid.rows; y++) {
+		for (let x = 0; x < settings.grid.columns; x++) {
+			settings.cells[y][x].display();
 		}
 	}
 }
 
-function interpolateGrid() {
-	for (var y = 0; y < settings.grid.rows; y++) {
-		for (var x = 0; x < settings.grid.columns; x++) {
+const interpolateGrid = () => {
+	for (let y = 0; y < settings.grid.rows; y++) {
+		for (let x = 0; x < settings.grid.columns; x++) {
 			if (coin(settings.interpolationProbability.value)) {
-				cells[y][x].interpolate();
+				settings.cells[y][x].interpolate();
 			}
 		}
 	}
 }
 
-function createSeeds() {
-	var n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
+const createSeeds = () => {
+	const n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
 
-	for (var i = 0; i < n; i++) {
+	for (let i = 0; i < n; i++) {
 		seed();
 	}
 }
 
-function seed() {
-	var y1 = randomIntegerInclusive(0, settings.grid.rows    - 1);
-	var x1 = randomIntegerInclusive(0, settings.grid.columns - 1);
+const seed = () => {
+	const y1 = randomIntegerInclusive(0, settings.grid.rows    - 1);
+	const x1 = randomIntegerInclusive(0, settings.grid.columns - 1);
 
-	var iOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
-	var jOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
+	const iOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
+	const jOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 
-	var y2 = constrain(y1 + iOffset, 0, settings.grid.rows    - 1);
-	var x2 = constrain(x1 + jOffset, 0, settings.grid.columns - 1);
+	const y2 = constrain(y1 + iOffset, 0, settings.grid.rows    - 1);
+	const x2 = constrain(x1 + jOffset, 0, settings.grid.columns - 1);
 
-	var color = {
+	const color = {
 		h : randomIntegerInclusive(0, 360),
 		s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
 		b : randomIntegerInclusive(settings.minB.value, settings.maxB.value),
 	};
 
-	for (var y = y1; y < y2 + 1; y++) {
-		for (var x = x1; x < x2 + 1; x++) {
-			Object.assign(cells[y][x].color, color);
+	for (let y = y1; y < y2 + 1; y++) {
+		for (let x = x1; x < x2 + 1; x++) {
+			Object.assign(settings.cells[y][x].color, color);
 		}
 	}
 }
 
-function walk() {
+const walk = () => {
 	for (parameter in settings) {
 		if (settings.hasOwnProperty(parameter)) {
 			if (settings[parameter].hasOwnProperty('walkProbability')) {
@@ -202,37 +200,37 @@ function walk() {
 	}
 }
 
-function readout() {
-	var {row, column} = mouseCoordinates();
+const readout = () => {
+	const {row, column} = mouseCoordinates();
 
-	var cell = cells[row][column];
+	const cell = settings.cells[row][column];
 
-	var cellColor = colorFromHSB(cell.color);
+	const cellColor = colorFromHSB(cell.color);
 
-	var hsb = [cell.color.h, cell.color.s, cell.color.b].map(String);
-	var rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
+	let hsb = [cell.color.h, cell.color.s, cell.color.b].map(String);
+	let rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
 
-	[hsb, rgb] = [hsb, rgb].map(function (array) {
-		var pad = Math.max(...array.map(x => x.length));
+	[hsb, rgb] = [hsb, rgb].map(array => {
+		const pad = Math.max(...array.map(x => x.length));
 		return array.map(x => x.padStart(pad));
 	});
 
-	var readoutText = [
+	const readoutText = [
 		'H ' + hsb[0] + ' R ' + rgb[0],
 		'S ' + hsb[1] + ' G ' + rgb[1],
 		'B ' + hsb[2] + ' B ' + rgb[2],
 	].join('\n');
 
-	var textW = Math.ceil(textWidth(readoutText.split('\n')[0]));
-	var textH = textLeading() * 3 - 2;
+	const textW = Math.ceil(textWidth(readoutText.split('\n')[0]));
+	const textH = textLeading() * 3 - 2;
 
-	var textMargin  = 5;
-	var boxDistance = 5;
+	const textMargin  = 5;
+	const boxDistance = 5;
 
-	var boxW = textW + textMargin * 2;
-	var boxH = textH + textMargin * 2;
+	const boxW = textW + textMargin * 2;
+	const boxH = textH + textMargin * 2;
 
-	var boxX, boxY, textX, textY;
+	let boxX, boxY, textX, textY;
 
 	if (mouseX + boxDistance + boxW < width) {
 		boxX  = mouseX + boxDistance;
@@ -257,7 +255,7 @@ function readout() {
 	text(readoutText, textX, textY);
 }
 
-function keyPressed() {
+keyPressed = () => {
 	switch (keyCode) {
 		case 32:
 			settings.loop = ! settings.loop;
@@ -277,20 +275,20 @@ function keyPressed() {
 	}
 }
 
-function mouseMoved() {
+mouseMoved = () => {
 	if (! settings.loop) {
 		settings.readout = true;
 	}
 }
 
-function mouseCoordinates() {
+const mouseCoordinates = () => {
 	return {
 		row    : Math.floor(mouseY / settings.grid.scale),
 		column : Math.floor(mouseX / settings.grid.scale),
 	}
 }
 
-function colorFromHSB(hsb) {
-	var {h, s, b} = hsb;
+const colorFromHSB = hsb => {
+	const {h, s, b} = hsb;
 	return color(h, s, b);
 }
