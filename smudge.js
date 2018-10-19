@@ -3,10 +3,15 @@ const settings = {
 		scale : 10,
 	},
 
+	randomSeeds : true,
+
 	checkerboard : true,
 
-	loop    : true,
-	readout : false,
+	loop      : true,
+	highlight : false,
+	readout   : false,
+
+	selection : {},
 
 	minSeedsPerFrame : {
 		value           :   0,
@@ -14,7 +19,7 @@ const settings = {
 		max             :  10,
 		walkProbability :   0.1,
 		walkStep        :   2,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	maxSeedsPerFrame : {
@@ -23,7 +28,7 @@ const settings = {
 		max             :  10,
 		walkProbability :   0.1,
 		walkStep        :   2,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	maxSeedSize : {
@@ -32,7 +37,7 @@ const settings = {
 		max             :  50,
 		walkProbability :   0.1,
 		walkStep        :  10,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	interpolationProbability : {
@@ -41,7 +46,7 @@ const settings = {
 		max             :   1.0,
 		walkProbability :   0.1,
 		walkStep        :   0.2,
-		walkType        : 'float',
+		type            : 'float',
 	},
 
 	minS : {
@@ -50,7 +55,7 @@ const settings = {
 		max             : 100,
 		walkProbability :   0.1,
 		walkStep        :  10,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	maxS : {
@@ -59,7 +64,7 @@ const settings = {
 		max             : 100,
 		walkProbability :   0.1,
 		walkStep        :  10,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	minB : {
@@ -68,7 +73,7 @@ const settings = {
 		max             : 100,
 		walkProbability :   0.1,
 		walkStep        :  10,
-		walkType        : 'int',
+		type            : 'int',
 	},
 
 	maxB : {
@@ -77,7 +82,7 @@ const settings = {
 		max             : 100,
 		walkProbability :   0.1,
 		walkStep        :  10,
-		walkType        : 'int',
+		type            : 'int',
 	},
 };
 
@@ -106,11 +111,19 @@ draw = () => {
 	if (settings.readout) {
 		readout();
 	}
+
+	if (settings.highlight) {
+		highlight();
+	}
 }
 
 const advanceFrame = () => {
 	interpolateGrid();
-	createSeeds();
+
+	if (settings.randomSeeds) {
+		createRandomSeeds();
+	}
+
 	walk();
 }
 
@@ -146,22 +159,91 @@ const displayGrid = () => {
 const interpolateGrid = () => {
 	for (let y = 0; y < settings.grid.rows; y++) {
 		for (let x = 0; x < settings.grid.columns; x++) {
-			if (coin(settings.interpolationProbability.value)) {
-				settings.cells[y][x].interpolate();
+			if (! settings.cells[y][x].frozen) {
+				if (coin(settings.interpolationProbability.value)) {
+					settings.cells[y][x].interpolate();
+				}
 			}
 		}
 	}
 }
 
-const createSeeds = () => {
-	const n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
+const walk = () => {
+	for (parameter in settings) {
+		if (settings.hasOwnProperty(parameter)) {
+			if (settings[parameter].hasOwnProperty('walkProbability')) {
+				if (coin(settings[parameter].walkProbability)) {
+					const {type, value, min, max, walkStep} = settings[parameter];
 
-	for (let i = 0; i < n; i++) {
-		seed();
+					switch (type) {
+						case 'int':
+							settings[parameter].value = randomWalkInteger(value, min, max, walkStep);
+							break;
+						case 'float':
+							settings[parameter].value = randomWalkFloat(value, min, max, walkStep);
+							break;
+					}
+				}
+			}
+		}
 	}
 }
 
-const seed = () => {
+const highlight = () => {
+	let {
+		start : {
+			column : x1,
+			row    : y1,
+		},
+		end : {
+			column : x2,
+			row    : y2,
+		},
+	} = settings.selection;
+
+	[x1, x2] = [x1, x2].sort(sortNumbers);
+	[y1, y2] = [y1, y2].sort(sortNumbers);
+
+	let x, y;
+	let w = x2 - x1 + 1;
+	let h = y2 - y1 + 1;
+
+	[x, y, w, h] = [x1, y1, w, h].map(n => n * settings.grid.scale);
+
+	fill(0, 0, 100, 0.1);
+	rect(x, y, w, h);
+}
+
+const seed = frozen => {
+	let {
+		start : {
+			column : x1,
+			row    : y1,
+		},
+		end : {
+			column : x2,
+			row    : y2,
+		},
+	} = settings.selection;
+
+	[x1, x2] = [x1, x2].sort(sortNumbers);
+	[y1, y2] = [y1, y2].sort(sortNumbers);
+
+	const color = {
+		h : randomIntegerInclusive(0, 360),
+		s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+		b : randomIntegerInclusive(settings.minB.value, settings.maxB.value),
+	};
+
+	for (let y = y1; y < y2 + 1; y++) {
+		for (let x = x1; x < x2 + 1; x++) {
+			Object.assign(settings.cells[y][x].color, color);
+			settings.cells[y][x].frozen = frozen;
+		}
+	}
+}
+
+const randomSeed = () => {
 	const y1 = randomIntegerInclusive(0, settings.grid.rows    - 1);
 	const x1 = randomIntegerInclusive(0, settings.grid.columns - 1);
 
@@ -180,22 +262,37 @@ const seed = () => {
 	for (let y = y1; y < y2 + 1; y++) {
 		for (let x = x1; x < x2 + 1; x++) {
 			Object.assign(settings.cells[y][x].color, color);
+			settings.cells[y][x].frozen = false;
 		}
 	}
 }
 
-const walk = () => {
-	for (parameter in settings) {
-		if (settings.hasOwnProperty(parameter)) {
-			if (settings[parameter].hasOwnProperty('walkProbability')) {
-				if (coin(settings[parameter].walkProbability)) {
-					if (settings[parameter].walkType == 'int') {
-						settings[parameter].value = randomWalkInteger(settings[parameter].value, settings[parameter].min, settings[parameter].max, settings[parameter].walkStep);
-					} else if (settings[parameter].walkType == 'float') {
-						settings[parameter].value = randomWalkFloat(settings[parameter].value, settings[parameter].min, settings[parameter].max, settings[parameter].walkStep);
-					}
-				}
-			}
+const createRandomSeeds = () => {
+	const n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
+
+	for (let i = 0; i < n; i++) {
+		randomSeed();
+	}
+}
+
+const freeze = direction => {
+	let {
+		start : {
+			column : x1,
+			row    : y1,
+		},
+		end : {
+			column : x2,
+			row    : y2,
+		},
+	} = settings.selection;
+
+	[x1, x2] = [x1, x2].sort(sortNumbers);
+	[y1, y2] = [y1, y2].sort(sortNumbers);
+
+	for (let y = y1; y < y2 + 1; y++) {
+		for (let x = x1; x < x2 + 1; x++) {
+			settings.cells[y][x].frozen = direction;
 		}
 	}
 }
@@ -226,6 +323,30 @@ mouseMoved = () => {
 	}
 }
 
+mousePressed = () => {
+	settings.selection.end = settings.selection.start = mouseCoordinates();
+	settings.readout = false;
+}
+
+mouseDragged = () => {
+	settings.selection.end = mouseCoordinates();
+	settings.highlight = true;
+}
+
+mouseReleased = () => {
+	if (keyIsDown(70)) {
+		freeze(true);
+	} else if (keyIsDown(85)) {
+		freeze(false);
+	} else if (keyIsDown(SHIFT)) {
+		seed(true);
+	} else {
+		seed(false);
+	}
+
+	settings.highlight = false;
+}
+
 const mouseCoordinates = () => {
 	return {
 		row    : Math.floor(mouseY / settings.grid.scale),
@@ -237,3 +358,5 @@ const colorFromHSB = hsb => {
 	const {h, s, b} = hsb;
 	return color(h, s, b);
 }
+
+const sortNumbers = (a, b) => a - b
