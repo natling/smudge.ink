@@ -343,6 +343,4 @@ const colorFromHSB = hsb => {
 	return color(h, s, b);
 }
 
-const sortNumbers = (a, b) => {
-	return a - b;
-}
+const sortNumbers = (a, b) => a - b

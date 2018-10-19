@@ -1,22 +1,16 @@
-settings = {
-	... settings,
+settings.mode    = false;
+settings.drawing = false;
 
-	... {
-		mode    : false,
-		drawing : false,
-
-		controller : {
-			grid : {
-				rows    : 8,
-				columns : 8,
-			},
-
-			selection : {},
-		},
+settings.controller = {
+	grid : {
+		rows    : 8,
+		columns : 8,
 	},
+
+	selection : {},
 };
 
-WebMidi.enable(function (err) {
+WebMidi.enable(err => {
 	if (err) {
 		console.log('WebMidi could not be enabled.', err);
 	}
@@ -24,10 +18,23 @@ WebMidi.enable(function (err) {
 	input  = WebMidi.getInputByName('Launchpad Pro Standalone Port');
 	output = WebMidi.getOutputByName('Launchpad Pro Standalone Port');
 
+	const setLED = (led, r, g, b) => {
+		output.sendSysex([0x00, 0x20, 0x29], [0x02, 0x10, 0x0B, led, r, g, b]);
+	}
+
+	const setGrid = data => {
+		output.sendSysex([0x00, 0x20, 0x29], flatten([0x02, 0x10, 0x0F, 1, data]));
+	}
+
+	const updateGrid = () => {
+		setGrid(convertGrid());
+		setTimeout(updateGrid, 10);
+	}
+
 	setLED(80, 0, 0, 0);
 	updateGrid();
 
-	input.addListener('controlchange', 'all', function(e) {
+	input.addListener('controlchange', 'all', e => {
 		if (e.controller.number == 80 && e.value == 127) {
 			settings.mode = ! settings.mode;
 
@@ -39,29 +46,12 @@ WebMidi.enable(function (err) {
 		}
 	});
 
-	input.addListener('noteon', 'all', function(e) {
-		note(e.note.number, true);
-	});
+	input.addListener('noteon',  'all', e => note(e.note.number, true));
+	input.addListener('noteoff', 'all', e => note(e.note.number, false));
 
-	input.addListener('noteoff', 'all', function(e) {
-		note(e.note.number, false);
-	});
-
-	function setLED(led, r, g, b) {
-		output.sendSysex([0x00, 0x20, 0x29], [0x02, 0x10, 0x0B, led, r, g, b]);
-	}
-
-	function setGrid(data) {
-		output.sendSysex([0x00, 0x20, 0x29], flatten([0x02, 0x10, 0x0F, 1, data]));
-	}
-
-	function updateGrid() {
-		setGrid(convertGrid());
-		setTimeout(updateGrid, 10);
-	}
 }, true);
 
-function note(number, direction) {
+const note = (number, direction) => {
 	if (settings.mode) {
 		if (! settings.drawing) {
 			if (direction) {
@@ -94,15 +84,15 @@ function note(number, direction) {
 	}
 }
 
-function controllerCoordinates(n) {
+const controllerCoordinates = n => {
 	return {
 		row    : settings.controller.grid.rows - Math.floor(n / 10),
 		column : n % 10 - 1,
 	};
 }
 
-function convertSelection(selection) {
-	var {
+const convertSelection = selection => {
+	let {
 		start : {
 			column : x1,
 			row    : y1,
@@ -128,12 +118,12 @@ function convertSelection(selection) {
 	};
 }
 
-function convertGrid() {
-	var data = create2DArray(settings.controller.grid.rows, settings.controller.grid.columns);
+const convertGrid = () => {
+	const data = create2DArray(settings.controller.grid.rows, settings.controller.grid.columns);
 
-	for (var y = 0; y < settings.controller.grid.rows; y++) {
-		for (var x = 0; x < settings.controller.grid.columns; x++) {
-			var selection = {
+	for (let y = 0; y < settings.controller.grid.rows; y++) {
+		for (let x = 0; x < settings.controller.grid.columns; x++) {
+			let selection = {
 				start : {
 					column : x,
 					row    : y,
@@ -146,9 +136,9 @@ function convertGrid() {
 
 			selection = convertSelection(selection);
 
-			var average = averageColor(selection);
+			const average = averageColor(selection);
 
-			var [r, g, b] = [red(average), green(average), blue(average)];
+			let [r, g, b] = [red(average), green(average), blue(average)];
 
 			[r, g, b] = [r, g, b].map(x => linlin(x, 0, 255, 0, 63));
 
@@ -159,8 +149,8 @@ function convertGrid() {
 	return data;
 }
 
-function averageColor(selection) {
-	var {
+const averageColor = selection => {
+	const {
 		start : {
 			column : x1,
 			row    : y1,
@@ -171,28 +161,28 @@ function averageColor(selection) {
 		},
 	} = selection;
 
-	var hsb = {
+	const hsb = {
 		h : [],
 		s : [],
 		b : [],
 	};
 
-	for (var y = y1; y < y2 + 1; y++) {
-		for (var x = x1; x < x2 + 1; x++) {
-			hsb.h.push(cells[y][x].color.h);
-			hsb.s.push(cells[y][x].color.s);
-			hsb.b.push(cells[y][x].color.b);
+	for (let y = y1; y < y2 + 1; y++) {
+		for (let x = x1; x < x2 + 1; x++) {
+			hsb.h.push(settings.cells[y][x].color.h);
+			hsb.s.push(settings.cells[y][x].color.s);
+			hsb.b.push(settings.cells[y][x].color.b);
 		}
 	}
 
 	hsb.s = hsb.s.map(x => linlin(x, 0, 100, 50, 100));
 
-	var [h, s, b] = [hsb.h, hsb.s, hsb.b].map(x => mean(x));
+	const [h, s, b] = [hsb.h, hsb.s, hsb.b].map(x => mean(x));
 
 	return colorFromHSB({h, s, b});
 }
 
-function selectAll() {
+const selectAll = () => {
 	settings.selection = {
 		start : {
 			column : 0,
@@ -205,6 +195,4 @@ function selectAll() {
 	};
 }
 
-function mean(array) {
-	return array.reduce((a, b) => a + b) / array.length;
-}
+const mean = array => array.reduce((a, b) => a + b) / array.length
