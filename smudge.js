@@ -97,7 +97,7 @@ const f = {
 
 	randomWalkInteger : (start, low, high, step) => {
 		while (true) {
-			var newStart = start + f.randomIntegerInclusive(-step, step);
+			const newStart = start + f.randomIntegerInclusive(-step, step);
 			if (newStart >= low && newStart <= high) {
 				return newStart;
 			}
@@ -106,7 +106,7 @@ const f = {
 
 	randomWalkFloat : (start, low, high, step) => {
 		while (true) {
-			var newStart = start + f.randomFloat(-step, step);
+			const newStart = start + f.randomFloat(-step, step);
 			if (newStart >= low && newStart <= high) {
 				return newStart;
 			}
@@ -135,7 +135,7 @@ const f = {
 	flatten : (array, ret) => {
 		ret = ret === undefined ? [] : ret;
 
-		for (var i = 0; i < array.length; i++) {
+		for (let i = 0; i < array.length; i++) {
 			if (Array.isArray(array[i])) {
 				f.flatten(array[i], ret);
 			} else {
