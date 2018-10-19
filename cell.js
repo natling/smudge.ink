@@ -30,10 +30,10 @@ class Cell {
 			neighbors.push(settings.cells[this.coordinates.y][columnNext]);
 		}
 
-		shuffleArray(neighbors);
+		f.shuffleArray(neighbors);
 
 		const colors = neighbors.slice(0, 2).map(x => colorFromHSB(x.color));
-		const amount = randomFloat(0, 1);
+		const amount = f.randomFloat(0, 1);
 
 		const interpolatedColor = lerpColor(...colors, amount);
 

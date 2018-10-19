@@ -86,6 +86,67 @@ const settings = {
 	},
 };
 
+const f = {
+	randomIntegerInclusive : (min, max) => {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	},
+
+	randomFloat : (min, max) => Math.random() * (max - min) + min,
+
+	randomWalkInteger : (start, low, high, step) => {
+		while (true) {
+			var newStart = start + f.randomIntegerInclusive(-step, step);
+			if (newStart >= low && newStart <= high) {
+				return newStart;
+			}
+		}
+	},
+
+	randomWalkFloat : (start, low, high, step) => {
+		while (true) {
+			var newStart = start + f.randomFloat(-step, step);
+			if (newStart >= low && newStart <= high) {
+				return newStart;
+			}
+		}
+	},
+
+	shuffleArray : array => {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			const temp = array[i];
+			array[i] = array[j];
+			array[j] = temp;
+		}
+
+		return array;
+	},
+
+	coin : p => Math.random() < p,
+
+	sortNumbers : (a, b) => a - b,
+
+	linlin : (value, inMin, inMax, outMin, outMax) => {
+		return outMin + (outMax - outMin) * (value - inMin) / (inMax - inMin);
+	},
+
+	flatten : (array, ret) => {
+		ret = ret === undefined ? [] : ret;
+
+		for (var i = 0; i < array.length; i++) {
+			if (Array.isArray(array[i])) {
+				f.flatten(array[i], ret);
+			} else {
+				ret.push(array[i]);
+			}
+		}
+
+		return ret;
+	},
+};
+
 setup = () => {
 	createCanvas(windowWidth, windowHeight);
 	colorMode(HSB);
@@ -131,15 +192,15 @@ const createGrid = () => {
 	settings.grid.rows    = Math.round(height / settings.grid.scale);
 	settings.grid.columns = Math.round(width  / settings.grid.scale);
 
-	settings.cells = create2DArray(settings.grid.rows, settings.grid.columns);
+	settings.cells = Array.from({length: settings.grid.rows}, () => Array.from({length: settings.grid.columns}, () => null));
 
 	for (let y = 0; y < settings.grid.rows; y++) {
 		for (let x = 0; x < settings.grid.columns; x++) {
 			const coordinates = {x, y};
 
 			const color = {
-				h : randomIntegerInclusive(0, 360),
-				s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+				h : f.randomIntegerInclusive(0, 360),
+				s : f.randomIntegerInclusive(settings.minS.value, settings.maxS.value),
 				b : 0,
 			};
 
@@ -160,7 +221,7 @@ const interpolateGrid = () => {
 	for (let y = 0; y < settings.grid.rows; y++) {
 		for (let x = 0; x < settings.grid.columns; x++) {
 			if (! settings.cells[y][x].frozen) {
-				if (coin(settings.interpolationProbability.value)) {
+				if (f.coin(settings.interpolationProbability.value)) {
 					settings.cells[y][x].interpolate();
 				}
 			}
@@ -172,15 +233,15 @@ const walk = () => {
 	for (parameter in settings) {
 		if (settings.hasOwnProperty(parameter)) {
 			if (settings[parameter].hasOwnProperty('walkProbability')) {
-				if (coin(settings[parameter].walkProbability)) {
+				if (f.coin(settings[parameter].walkProbability)) {
 					const {type, value, min, max, walkStep} = settings[parameter];
 
 					switch (type) {
 						case 'int':
-							settings[parameter].value = randomWalkInteger(value, min, max, walkStep);
+							settings[parameter].value = f.randomWalkInteger(value, min, max, walkStep);
 							break;
 						case 'float':
-							settings[parameter].value = randomWalkFloat(value, min, max, walkStep);
+							settings[parameter].value = f.randomWalkFloat(value, min, max, walkStep);
 							break;
 					}
 				}
@@ -201,8 +262,8 @@ const highlight = () => {
 		},
 	} = settings.selection;
 
-	[x1, x2] = [x1, x2].sort(sortNumbers);
-	[y1, y2] = [y1, y2].sort(sortNumbers);
+	[x1, x2] = [x1, x2].sort(f.sortNumbers);
+	[y1, y2] = [y1, y2].sort(f.sortNumbers);
 
 	let x, y;
 	let w = x2 - x1 + 1;
@@ -226,13 +287,13 @@ const seed = frozen => {
 		},
 	} = settings.selection;
 
-	[x1, x2] = [x1, x2].sort(sortNumbers);
-	[y1, y2] = [y1, y2].sort(sortNumbers);
+	[x1, x2] = [x1, x2].sort(f.sortNumbers);
+	[y1, y2] = [y1, y2].sort(f.sortNumbers);
 
 	const color = {
-		h : randomIntegerInclusive(0, 360),
-		s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
-		b : randomIntegerInclusive(settings.minB.value, settings.maxB.value),
+		h : f.randomIntegerInclusive(0, 360),
+		s : f.randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+		b : f.randomIntegerInclusive(settings.minB.value, settings.maxB.value),
 	};
 
 	for (let y = y1; y < y2 + 1; y++) {
@@ -244,19 +305,19 @@ const seed = frozen => {
 }
 
 const randomSeed = () => {
-	const y1 = randomIntegerInclusive(0, settings.grid.rows    - 1);
-	const x1 = randomIntegerInclusive(0, settings.grid.columns - 1);
+	const y1 = f.randomIntegerInclusive(0, settings.grid.rows    - 1);
+	const x1 = f.randomIntegerInclusive(0, settings.grid.columns - 1);
 
-	const iOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
-	const jOffset = randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
+	const iOffset = f.randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
+	const jOffset = f.randomIntegerInclusive(-settings.maxSeedSize.value, settings.maxSeedSize.value);
 
 	const y2 = constrain(y1 + iOffset, 0, settings.grid.rows    - 1);
 	const x2 = constrain(x1 + jOffset, 0, settings.grid.columns - 1);
 
 	const color = {
-		h : randomIntegerInclusive(0, 360),
-		s : randomIntegerInclusive(settings.minS.value, settings.maxS.value),
-		b : randomIntegerInclusive(settings.minB.value, settings.maxB.value),
+		h : f.randomIntegerInclusive(0, 360),
+		s : f.randomIntegerInclusive(settings.minS.value, settings.maxS.value),
+		b : f.randomIntegerInclusive(settings.minB.value, settings.maxB.value),
 	};
 
 	for (let y = y1; y < y2 + 1; y++) {
@@ -268,7 +329,7 @@ const randomSeed = () => {
 }
 
 const createRandomSeeds = () => {
-	const n = randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
+	const n = f.randomIntegerInclusive(settings.minSeedsPerFrame.value, settings.maxSeedsPerFrame.value);
 
 	for (let i = 0; i < n; i++) {
 		randomSeed();
@@ -287,8 +348,8 @@ const freeze = direction => {
 		},
 	} = settings.selection;
 
-	[x1, x2] = [x1, x2].sort(sortNumbers);
-	[y1, y2] = [y1, y2].sort(sortNumbers);
+	[x1, x2] = [x1, x2].sort(f.sortNumbers);
+	[y1, y2] = [y1, y2].sort(f.sortNumbers);
 
 	for (let y = y1; y < y2 + 1; y++) {
 		for (let x = x1; x < x2 + 1; x++) {
@@ -358,5 +419,3 @@ const colorFromHSB = hsb => {
 	const {h, s, b} = hsb;
 	return color(h, s, b);
 }
-
-const sortNumbers = (a, b) => a - b

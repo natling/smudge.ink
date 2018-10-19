@@ -23,7 +23,7 @@ WebMidi.enable(err => {
 	}
 
 	const setGrid = data => {
-		output.sendSysex([0x00, 0x20, 0x29], flatten([0x02, 0x10, 0x0F, 1, data]));
+		output.sendSysex([0x00, 0x20, 0x29], f.flatten([0x02, 0x10, 0x0F, 1, data]));
 	}
 
 	const updateGrid = () => {
@@ -103,8 +103,8 @@ const convertSelection = selection => {
 		},
 	} = selection;
 
-	[x1, x2] = [x1, x2].sort(sortNumbers);
-	[y1, y2] = [y1, y2].sort(sortNumbers);
+	[x1, x2] = [x1, x2].sort(f.sortNumbers);
+	[y1, y2] = [y1, y2].sort(f.sortNumbers);
 
 	return {
 		start : {
@@ -119,7 +119,7 @@ const convertSelection = selection => {
 }
 
 const convertGrid = () => {
-	const data = create2DArray(settings.controller.grid.rows, settings.controller.grid.columns);
+	const data = Array.from({length: settings.controller.grid.rows}, () => Array.from({length: settings.controller.grid.columns}, () => null));
 
 	for (let y = 0; y < settings.controller.grid.rows; y++) {
 		for (let x = 0; x < settings.controller.grid.columns; x++) {
@@ -140,7 +140,7 @@ const convertGrid = () => {
 
 			let [r, g, b] = [red(average), green(average), blue(average)];
 
-			[r, g, b] = [r, g, b].map(x => linlin(x, 0, 255, 0, 63));
+			[r, g, b] = [r, g, b].map(x => f.linlin(x, 0, 255, 0, 63));
 
 			data[settings.controller.grid.rows - y - 1][x] = [r, g, b];
 		}
@@ -175,7 +175,7 @@ const averageColor = selection => {
 		}
 	}
 
-	hsb.s = hsb.s.map(x => linlin(x, 0, 100, 50, 100));
+	hsb.s = hsb.s.map(x => f.linlin(x, 0, 100, 50, 100));
 
 	const [h, s, b] = [hsb.h, hsb.s, hsb.b].map(mean);
 
