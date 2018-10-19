@@ -177,7 +177,7 @@ const averageColor = selection => {
 
 	hsb.s = hsb.s.map(x => linlin(x, 0, 100, 50, 100));
 
-	const [h, s, b] = [hsb.h, hsb.s, hsb.b].map(x => mean(x));
+	const [h, s, b] = [hsb.h, hsb.s, hsb.b].map(mean);
 
 	return colorFromHSB({h, s, b});
 }
