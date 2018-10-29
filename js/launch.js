@@ -48,7 +48,6 @@ WebMidi.enable(err => {
 
 	input.addListener('noteon',  'all', e => note(e.note.number, true));
 	input.addListener('noteoff', 'all', e => note(e.note.number, false));
-
 }, true);
 
 const note = (number, direction) => {

@@ -4,7 +4,7 @@
 	src:
 		local('Menlo'),
 		local('Menlo Regular'),
-		url('menlo.otf') format('opentype');
+		url('../files/menlo.otf') format('opentype');
 }
 
 body {
