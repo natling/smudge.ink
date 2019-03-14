@@ -271,7 +271,7 @@ const highlight = () => {
 	rect(x, y, w, h);
 }
 
-const seed = frozen => {
+let seed = frozen => {
 	let {
 		start : {
 			column : x1,

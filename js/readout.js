@@ -6,7 +6,7 @@ const readout = () => {
 	const cellColor = colorFromHSB(cell.color);
 
 	let hsb = [cell.color.h, cell.color.s, cell.color.b].map(String);
-	let rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(x => String(Math.round(x)));
+	let rgb = [red(cellColor), green(cellColor), blue(cellColor)].map(Math.round).map(String);
 
 	[hsb, rgb] = [hsb, rgb].map(array => {
 		const pad = Math.max(...array.map(x => x.length));
