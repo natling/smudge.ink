@@ -55,12 +55,7 @@ WebMidi.enable(err => {
 	settings.midi.input.addListener('controlchange', 'all', e => {
 		if (e.controller.number == 80 && e.value == 127) {
 			settings.mode = ! settings.mode;
-
-			if (settings.mode) {
-				setLED(80, 63, 0, 0);
-			} else {
-				setLED(80, 0, 0, 0);
-			}
+			setLED(80, settings.mode ? 63 : 0, 0, 0);
 		}
 	});
 
